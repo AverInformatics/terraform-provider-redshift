@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func redshiftUser() *schema.Resource {
@@ -40,7 +40,7 @@ func redshiftUser() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
-			"createdb": { //Allows them to create databases
+			"create_db": { //Allows them to create databases
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -55,7 +55,7 @@ func redshiftUser() *schema.Resource {
 				Optional: true,
 				Default:  "RESTRICTED",
 			},
-			"superuser": { //If true set CREATEUSER
+			"super_user": { //If true set CREATEUSER
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
@@ -108,7 +108,7 @@ func resourceRedshiftUserCreate(d *schema.ResourceData, meta interface{}) error 
 		//TODO Validate v is in format YYYY-mm-dd
 		createStatement += "VALID UNTIL '" + v.(string) + "'"
 	}
-	if v, ok := d.GetOk("createdb"); ok {
+	if v, ok := d.GetOk("create_db"); ok {
 		if v.(bool) {
 			createStatement += " CREATEDB "
 		} else {
@@ -128,7 +128,7 @@ func resourceRedshiftUserCreate(d *schema.ResourceData, meta interface{}) error 
 			panic(v.(string))
 		}
 	}
-	if v, ok := d.GetOk("superuser"); ok && v.(bool) {
+	if v, ok := d.GetOk("super_user"); ok && v.(bool) {
 		createStatement += " CREATEUSER "
 	}
 
@@ -212,8 +212,8 @@ func readRedshiftUser(d *schema.ResourceData, tx *sql.Tx) error {
 	log.Print("Succesfully read redshift user")
 
 	d.Set("username", usename)
-	d.Set("createdb", usecreatedb)
-	d.Set("superuser", usesuper)
+	d.Set("create_db", usecreatedb)
+	d.Set("super_user", usesuper)
 
 	if valuntil.Valid {
 		log.Print("Valid until " + valuntil.String)
@@ -260,9 +260,9 @@ func resourceRedshiftUserUpdate(d *schema.ResourceData, meta interface{}) error 
 		}
 	}
 
-	if d.HasChange("createdb") {
+	if d.HasChange("create_db") {
 
-		if v, ok := d.GetOk("createdb"); ok && v.(bool) {
+		if v, ok := d.GetOk("create_db"); ok && v.(bool) {
 			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " createdb"); err != nil {
 				return err
 			}
@@ -283,8 +283,8 @@ func resourceRedshiftUserUpdate(d *schema.ResourceData, meta interface{}) error 
 			return err
 		}
 	}
-	if d.HasChange("superuser") {
-		if v, ok := d.GetOk("superuser"); ok && v.(bool) {
+	if d.HasChange("super_user") {
+		if v, ok := d.GetOk("super_user"); ok && v.(bool) {
 			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " CREATEUSER "); err != nil {
 				return err
 			}

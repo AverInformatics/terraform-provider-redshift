@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -33,11 +33,11 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Default:     "5439",
 			},
-			"sslmode": {
+			"ssl_mode": {
 				Type:        schema.TypeString,
 				Description: "SSL mode (require, disable, verify-ca, verify-full)",
 				Optional:    true,
-				Default:     "require",
+				Default:     "verify-full",
 			},
 			"database": {
 				Type:        schema.TypeString,
@@ -67,7 +67,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		user:     d.Get("user").(string),
 		password: d.Get("password").(string),
 		port:     d.Get("port").(string),
-		sslmode:  d.Get("sslmode").(string),
+		sslmode:  d.Get("ssl_mode").(string),
 		database: d.Get("database").(string),
 	}
 
