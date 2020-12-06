@@ -18,7 +18,7 @@ func init() {
 			panic(err)
 		}
 		testAccProviders = map[string]terraform.ResourceProvider{
-			"gitlab": testAccProvider,
+			"redshift": testAccProvider,
 		}
 	}
 }

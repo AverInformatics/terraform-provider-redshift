@@ -6,7 +6,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Config holds API and APP keys to authenticate to Datadog.
+// Config holds API and APP keys to authenticate to redshift.
 type Config struct {
 	url      string
 	user     string

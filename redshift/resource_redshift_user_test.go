@@ -2,19 +2,24 @@ package redshift
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"strconv"
+	"testing"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"log"
-	"strconv"
-	"testing"
 )
 
 func TestAccRedshiftUser_basic(t *testing.T) {
 	rInt := acctest.RandInt()
 	var user testAccRedshiftUserExpectedAttributes
-
+	vu := sql.NullString{String: "false", Valid: true}
+	pd := sql.NullBool{Bool: false, Valid: false}
+	su := sql.NullBool{Bool:false, Valid: true}
+	cd := sql.NullBool{Bool: false, Valid: true}
+	cl := sql.NullString{String: "UNLIMITED", Valid: true}
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -25,13 +30,12 @@ func TestAccRedshiftUser_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckRedShiftUserExists("redshift_user.test_user", &user),
 					testAccDataSourceRedshiftUserAttributes(&user, &testAccRedshiftUserExpectedAttributes{
-						Username: fmt.Sprintf("test_user_%d", rInt),
-						ValidUntil: "",
-						PasswordDisabled: false,
-						CreateDB: false,
-						ConnectionLimit: "UNLIMITED",
-						SyslogAccess: "RESTRICTED",
-						SuperUser: false,
+						Username:         fmt.Sprintf("test_user_%d", rInt),
+						ValidUntil:       vu,
+						PasswordDisabled: pd,
+						CreateDB:         cd,
+						ConnectionLimit:  cl,
+						SuperUser:        su,
 					}),
 				),
 			},
@@ -41,21 +45,28 @@ func TestAccRedshiftUser_basic(t *testing.T) {
 
 func testAccDataSourceRedshiftUserAttributes(src, n *testAccRedshiftUserExpectedAttributes) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-
-		user := s.RootModule().Resources[src]
-		userResource := user.Primary.Attributes
-
-		search := s.RootModule().Resources[n]
-		searchResource := search.Primary.Attributes
-
-		testAttributes := []string{
-			"username",
+		if src.ConnectionLimit != n.ConnectionLimit {
+			return errors.New("connection limit not equal")
 		}
 
-		for _, attribute := range testAttributes {
-			if searchResource[attribute] != userResource[attribute] {
-				return fmt.Errorf("Expected user's parameter `%s` to be: %s, but got: `%s`", attribute, userResource[attribute], searchResource[attribute])
-			}
+		if src.PasswordDisabled != n.PasswordDisabled {
+			return errors.New("password disabled not equal")
+		}
+
+		if src.ValidUntil  != n.ValidUntil {
+			return errors.New("valid until not equal")
+		}
+
+		if src.SuperUser != n.SuperUser {
+			return errors.New("superuser not equal")
+		}
+
+		if src.CreateDB != n.CreateDB {
+			return errors.New("createdb not equal")
+		}
+
+		if src.Username != n.Username {
+			return errors.New("username not equal")
 		}
 
 		return nil
@@ -72,14 +83,13 @@ resource redshift_user test_user {
 }
 
 type testAccRedshiftUserExpectedAttributes struct {
-	Username         string
-	ValidUntil       string
-	PasswordDisabled bool
-	CreateDB         bool
-	ConnectionLimit  string
-	SyslogAccess     string
-	SuperUser        bool
-	Usesysid         string
+	Username         string         `sql:"usename"`
+	ValidUntil       sql.NullString `sql:"valuntil"`
+	PasswordDisabled sql.NullBool   `sql:"usecatupd"`
+	CreateDB         sql.NullBool   `sql:"usecreatedb"`
+	ConnectionLimit  sql.NullString `sql:"useconnlimit"`
+	SuperUser        sql.NullBool   `sql:"usesuper"`
+	Usesysid         string         `sql:"usesysid"`
 }
 
 func testAccCheckRedShiftUserExists(n string, user *testAccRedshiftUserExpectedAttributes) resource.TestCheckFunc {
@@ -88,7 +98,7 @@ func testAccCheckRedShiftUserExists(n string, user *testAccRedshiftUserExpectedA
 		if !ok {
 			return fmt.Errorf("Not Found: %s", n)
 		}
-		userID := rs.Primary.Attributes["usesysid"]
+		userID := rs.Primary.Attributes["id"]
 		if userID == "" {
 			return fmt.Errorf("No usesysid is set")
 		}
@@ -102,38 +112,16 @@ func testAccCheckRedShiftUserExists(n string, user *testAccRedshiftUserExpectedA
 
 		id, _ := strconv.Atoi(userID)
 
-		var readUserQuery = "select usename, usecreatedb, usesuper, valuntil, useconnlimit " +
+		var readUserQuery = "select usename, usecreatedb, usesuper, usecatupd, valuntil, useconnlimit " +
 			"from pg_user_info where usesysid = $1"
 
-		log.Print("Reading redshift user with query: " + readUserQuery)
-
-		err := tx.QueryRow(readUserQuery, d.Id()).Scan(&user)
-
-		if err != nil {
-			log.Print("Reading user does not exist")
-			log.Print(err)
-			return err
-		}
+		err := tx.QueryRow(readUserQuery, id).Scan(&user.Username, &user.CreateDB, &user.SuperUser, &user.ValidUntil, &user.PasswordDisabled, &user.ConnectionLimit)
 
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
-
 		tx.Commit()
-
-		gotUser, _, err := conn.Users.GetUser(id)
-		if err != nil {
-			return err
-		}
-		*user = *gotUser
-		return nil
-	}
-}
-
-func testAccCheckGitlabUserAttributes(user *gitlab.User, want *testAccGitlabUserExpectedAttributes) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-
 		return nil
 	}
 }
