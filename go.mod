@@ -1,10 +1,8 @@
-module github.com/frankfarrell/terraform-provider-redshift
+module github.com/joshuarose/terraform-provider-redshift
 
-go 1.12
+go 1.15
 
 require (
-	github.com/hashicorp/terraform v0.12.2
-	github.com/lib/pq v1.1.1
+	github.com/hashicorp/terraform-plugin-sdk v1.16.0
+	github.com/lib/pq v1.9.0
 )
-
-replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999

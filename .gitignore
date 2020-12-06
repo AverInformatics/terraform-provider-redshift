@@ -16,3 +16,6 @@ terraform-provider-redshift
 #Intellij
 *.iml
 .idea
+
+.DS_STORE
+terraform.auto.tfvars
