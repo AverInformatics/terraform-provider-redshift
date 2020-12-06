@@ -14,16 +14,19 @@ func Provider() terraform.ResourceProvider {
 			"url": {
 				Type:        schema.TypeString,
 				Description: "Redshift url",
+				DefaultFunc: schema.EnvDefaultFunc("REDSHIFT_URL", nil),
 				Required:    true,
 			},
 			"user": {
 				Type:        schema.TypeString,
 				Description: "master user",
+				DefaultFunc: schema.EnvDefaultFunc("REDSHIFT_USER", nil),
 				Required:    true,
 			},
 			"password": {
 				Type:        schema.TypeString,
 				Description: "master password",
+				DefaultFunc: schema.EnvDefaultFunc("REDSHIFT_PASSWORD", nil),
 				Required:    true,
 				Sensitive:   true,
 			},
