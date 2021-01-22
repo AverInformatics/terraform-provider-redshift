@@ -212,6 +212,27 @@ func readRedshiftSchemaGroupPrivilege(d *schema.ResourceData, tx *sql.Tx) error 
 		referencesPrivilege bool
 	)
 
+	validateSchemaGrants(d)
+
+	schemaName, _, schemaErr := GetSchemaInfoForSchemaId(tx, d.Get("schema_id").(int))
+	if schemaErr != nil {
+		log.Print(schemaErr)
+		tx.Rollback()
+		return schemaErr
+	}
+
+	groupName, groupErr := GetGroupNameForGroupId(tx, d.Get("group_id").(int))
+	if groupErr != nil {
+		log.Print(groupErr)
+		tx.Rollback()
+		return groupErr
+	}
+
+	if err := updateSchemaPrivilege(tx, d, "usage", "USAGE", schemaName, groupName); err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	var hasPrivilegeQuery = `
 			select
 			decode(charindex('r',split_part(split_part(array_to_string(defaclacl, '|'),'group ' || pu.groname,2 ) ,'/',1)),0,0,1)  as select,
