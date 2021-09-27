@@ -94,7 +94,7 @@ func resourceRedshiftUserCreate(d *schema.ResourceData, meta interface{}) error 
 		panic(txErr)
 	}
 
-	var createStatement string = "create user " + d.Get("username").(string) + " with password "
+	var createStatement string = "create user \"" + d.Get("username").(string) + "\" with password "
 
 	if v, ok := d.GetOk("password_disabled"); ok && v.(bool) {
 		createStatement += " DISABLE "
@@ -244,7 +244,7 @@ func resourceRedshiftUserUpdate(d *schema.ResourceData, meta interface{}) error 
 	if d.HasChange("username") {
 
 		oldUsername, newUsername := d.GetChange("username")
-		alterUserQuery := "alter user " + oldUsername.(string) + " rename to " + newUsername.(string)
+		alterUserQuery := "alter user \"" + oldUsername.(string) + "\" rename to \"" + newUsername.(string) + "\""
 
 		if _, err := tx.Exec(alterUserQuery); err != nil {
 			return err
@@ -263,33 +263,33 @@ func resourceRedshiftUserUpdate(d *schema.ResourceData, meta interface{}) error 
 	if d.HasChange("create_db") {
 
 		if v, ok := d.GetOk("create_db"); ok && v.(bool) {
-			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " createdb"); err != nil {
+			if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" createdb"); err != nil {
 				return err
 			}
 		} else {
-			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " nocreatedb"); err != nil {
+			if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" nocreatedb"); err != nil {
 				return err
 			}
 		}
 	}
 	//TODO What if value is removed?
 	if d.HasChange("connection_limit") {
-		if _, err := tx.Exec("alter user " + d.Get("username").(string) + " CONNECTION LIMIT " + d.Get("connection_limit").(string)); err != nil {
+		if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" CONNECTION LIMIT " + d.Get("connection_limit").(string)); err != nil {
 			return err
 		}
 	}
 	if d.HasChange("syslog_access") {
-		if _, err := tx.Exec("alter user " + d.Get("username").(string) + " SYSLOG ACCESS " + d.Get("syslog_access").(string)); err != nil {
+		if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" SYSLOG ACCESS " + d.Get("syslog_access").(string)); err != nil {
 			return err
 		}
 	}
 	if d.HasChange("super_user") {
 		if v, ok := d.GetOk("super_user"); ok && v.(bool) {
-			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " CREATEUSER "); err != nil {
+			if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" CREATEUSER "); err != nil {
 				return err
 			}
 		} else {
-			if _, err := tx.Exec("alter user " + d.Get("username").(string) + " NOCREATEUSER"); err != nil {
+			if _, err := tx.Exec("alter user \"" + d.Get("username").(string) + "\" NOCREATEUSER"); err != nil {
 				return err
 			}
 		}
@@ -310,7 +310,7 @@ func resetPassword(tx *sql.Tx, d *schema.ResourceData, username string) error {
 
 	if v, ok := d.GetOk("password_disabled"); ok && v.(bool) {
 
-		var disablePasswordQuery = "alter user " + username + " password disable"
+		var disablePasswordQuery = "alter user \"" + username + "\" password disable"
 
 		if _, err := tx.Exec(disablePasswordQuery); err != nil {
 			return err
@@ -318,7 +318,7 @@ func resetPassword(tx *sql.Tx, d *schema.ResourceData, username string) error {
 		return nil
 
 	} else {
-		var resetPasswordQuery = "alter user " + username + " password '" + d.Get("password").(string) + "' "
+		var resetPasswordQuery = "alter user \"" + username + "\" password '" + d.Get("password").(string) + "' "
 		if v, ok := d.GetOk("valid_until"); ok {
 			resetPasswordQuery += " VALID UNTIL '" + v.(string) + "'"
 
@@ -442,7 +442,7 @@ func resourceRedshiftUserDelete(d *schema.ResourceData, meta interface{}) error 
 		redshiftClient.Exec("ALTER DEFAULT PRIVILEGES IN SCHEMA " + schemaName + " REVOKE ALL ON TABLES FROM " + d.Get("username").(string) + " CASCADE")
 	}
 
-	_, dropUserErr := tx.Exec("DROP USER " + d.Get("username").(string))
+	_, dropUserErr := tx.Exec("DROP USER \"" + d.Get("username").(string) + "\"")
 
 	if dropUserErr != nil {
 		tx.Rollback()
